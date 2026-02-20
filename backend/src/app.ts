@@ -7,7 +7,7 @@ import { usersRouter } from "./modules/users/users.routes.js";
 import { rolesRouter } from "./modules/roles/roles.routes.js";
 import { settingsRouter } from "./modules/settings/settings.routes.js";
 
-const app = express();
+const app: express.Express = express();
 const corsOrigin = process.env.CORS_ORIGIN || "http://localhost:5173";
 
 app.use(

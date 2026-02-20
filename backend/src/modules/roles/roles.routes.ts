@@ -1,4 +1,4 @@
-import { Router } from "express";
+import express, { Router } from "express";
 import { authenticate, requireRole } from "../../middleware/authenticate.js";
 import { validateBody } from "../../middleware/validate.js";
 import { createRoleSchema, updateRoleSchema } from "./roles.schema.js";
@@ -14,4 +14,4 @@ router.post("/", requireRole("Super Admin"), validateBody(createRoleSchema), rol
 router.put("/:id", requireRole("Super Admin"), validateBody(updateRoleSchema), rolesController.update);
 router.delete("/:id", requireRole("Super Admin"), rolesController.remove);
 
-export const rolesRouter = router;
+export const rolesRouter: express.Router = router;

@@ -1,4 +1,4 @@
-import { Router } from "express";
+import express, { Router } from "express";
 import { validateBody } from "../../middleware/validate.js";
 import { authenticate } from "../../middleware/authenticate.js";
 import { registerSchema, loginSchema } from "./auth.schema.js";
@@ -11,4 +11,4 @@ router.post("/login", validateBody(loginSchema), authController.login);
 router.get("/me", authenticate, authController.me);
 router.post("/logout", authenticate, authController.logout);
 
-export const authRouter = router;
+export const authRouter: express.Router = router;

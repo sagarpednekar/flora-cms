@@ -1,4 +1,4 @@
-import { Router } from "express";
+import express, { Router } from "express";
 import { authenticate } from "../../middleware/authenticate.js";
 import { validateBody, validateQuery } from "../../middleware/validate.js";
 import { upload } from "../../middleware/upload.js";
@@ -16,4 +16,4 @@ router.post("/import", upload.single("file"), speciesController.importFromFile);
 router.put("/:id", validateBody(updateSpeciesSchema), speciesController.update);
 router.delete("/:id", speciesController.remove);
 
-export const speciesRouter = router;
+export const speciesRouter: express.Router = router;
