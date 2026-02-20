@@ -1,4 +1,4 @@
-import { Router } from "express";
+import express, { Router } from "express";
 import { authenticate, requireRole } from "../../middleware/authenticate.js";
 import { validateBody, validateQuery } from "../../middleware/validate.js";
 import { createUserSchema, updateUserSchema, listUsersQuerySchema } from "./users.schema.js";
@@ -14,4 +14,4 @@ router.post("/", requireRole("Super Admin"), validateBody(createUserSchema), use
 router.put("/:id", requireRole("Super Admin"), validateBody(updateUserSchema), usersController.update);
 router.delete("/:id", requireRole("Super Admin"), usersController.remove);
 
-export const usersRouter = router;
+export const usersRouter: express.Router = router;
