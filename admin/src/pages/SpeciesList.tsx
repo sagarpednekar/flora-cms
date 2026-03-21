@@ -23,7 +23,7 @@ import {
 } from "@/api/species";
 import { Pagination } from "@/components/Pagination";
 import { useToast } from "@/components/ui/use-toast";
-import { Plus, Pencil, Trash2, Upload, Filter } from "lucide-react";
+import { Plus, Pencil, Trash2, Upload, Filter, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const OPERATORS_STRING = [
@@ -83,6 +83,11 @@ const SPECIES_TABLE_COLUMNS = [
   { id: "state", label: "State" },
 ];
 
+function capitalize(val: string): string {
+  if (!val) return val;
+  return val.charAt(0).toUpperCase() + val.slice(1).toLowerCase();
+}
+
 function renderCell(colId: string, s: FloraSpecies) {
   const empty = "—";
   switch (colId) {
@@ -105,25 +110,25 @@ function renderCell(colId: string, s: FloraSpecies) {
     case "verseNumber":
       return s.verseNumber ?? empty;
     case "singleOrCombinationDrug":
-      return s.singleOrCombinationDrug ?? empty;
+      return s.singleOrCombinationDrug ? capitalize(s.singleOrCombinationDrug) : empty;
     case "formulationAsSingleDrug":
-      return s.formulationAsSingleDrug ?? empty;
+      return s.formulationAsSingleDrug ? capitalize(s.formulationAsSingleDrug) : empty;
     case "formulationAsCombination":
-      return s.formulationAsCombination ?? empty;
+      return s.formulationAsCombination ? capitalize(s.formulationAsCombination) : empty;
     case "nameOfCombination":
       return s.nameOfCombination ?? empty;
     case "userExtOrInt":
-      return s.userExtOrInt ?? empty;
+      return s.userExtOrInt ? capitalize(s.userExtOrInt) : empty;
     case "typeOfExtUse":
-      return s.typeOfExtUse ?? empty;
+      return s.typeOfExtUse ? capitalize(s.typeOfExtUse) : empty;
     case "enteralRoute":
       return s.enteralRoute ?? empty;
     case "parenteralRoute":
       return s.parenteralRoute ?? empty;
     case "usesAsSingleDrug":
-      return s.usesAsSingleDrug ?? empty;
+      return s.usesAsSingleDrug ? capitalize(s.usesAsSingleDrug) : empty;
     case "usesAsCombination":
-      return s.usesAsCombination ?? empty;
+      return s.usesAsCombination ? capitalize(s.usesAsCombination) : empty;
     case "anupana":
       return s.anupana ?? empty;
     case "granthadikara":
@@ -273,12 +278,34 @@ export function SpeciesList() {
         <h1 className="text-2xl font-semibold">Flora Species</h1>
         <div className="flex gap-2">
           <form onSubmit={handleSearchSubmit} className="flex gap-2">
-            <Input
-              placeholder="Search by drug name, Sanskrit or Latin name…"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="w-64"
-            />
+            <div className="relative">
+              <Input
+                placeholder="Search by drug name, Sanskrit, Latin name or book…"
+                value={search}
+                onChange={(e) => {
+                  setSearch(e.target.value);
+                  if (e.target.value === "") {
+                    setSearchDebounced("");
+                    setPage(1);
+                  }
+                }}
+                className="w-64 pr-8"
+              />
+              {search && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSearch("");
+                    setSearchDebounced("");
+                    setPage(1);
+                  }}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                  aria-label="Clear search"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              )}
+            </div>
             <Button type="submit" variant="secondary">
               Search
             </Button>

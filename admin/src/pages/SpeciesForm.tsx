@@ -79,15 +79,15 @@ const defaultForm: FormState = {
   formulationAsCombination: "NA",
   nameOfCombination: "NA",
   userExtOrInt: "INT",
-  typeOfExtUse: "",
-  enteralRoute: "",
-  parenteralRoute: "",
+  typeOfExtUse: "NA",
+  enteralRoute: "NA",
+  parenteralRoute: "NA",
   usesAsSingleDrug: "NA",
   usesAsCombination: "NA",
-  anupana: "",
+  anupana: "NA",
   granthadikara: "",
   rogadhikara: "",
-  sahapana: "",
+  sahapana: "NA",
   published: false,
 };
 
@@ -270,15 +270,6 @@ export function SpeciesForm() {
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="remarks">Remarks</Label>
-            <textarea
-              id="remarks"
-              className={`${inputClass} min-h-[100px]`}
-              value={form.remarks ?? ""}
-              onChange={(e) => setForm((f) => ({ ...f, remarks: e.target.value }))}
-            />
-          </div>
-          <div className="space-y-2">
             <Label htmlFor="partOfPlantUsed">Part of plant used</Label>
             <Input
               id="partOfPlantUsed"
@@ -293,7 +284,7 @@ export function SpeciesForm() {
           <h2 className="text-lg font-medium border-b pb-2">Source</h2>
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-2">
-              <Label htmlFor="bookName">Book name *</Label>
+              <Label htmlFor="bookName">Book name / Samhita name *</Label>
               <select
                 id="bookName"
                 className={inputClass}
@@ -427,12 +418,20 @@ export function SpeciesForm() {
                 id="userExtOrInt"
                 className={inputClass}
                 value={form.userExtOrInt ?? ""}
-                onChange={(e) =>
+                onChange={(e) => {
+                  const val = (e.target.value as UserExtOrInt) || undefined;
                   setForm((f) => ({
                     ...f,
-                    userExtOrInt: (e.target.value as UserExtOrInt) || undefined,
-                  }))
-                }
+                    userExtOrInt: val,
+                    ...(val === "INT" && { typeOfExtUse: "NA" }),
+                    ...(val === "EXT" && {
+                      enteralRoute: "NA",
+                      parenteralRoute: "NA",
+                      usesAsSingleDrug: "NA",
+                      usesAsCombination: "NA",
+                    }),
+                  }));
+                }}
               >
                 {USER_EXT_INT_OPTIONS.map((o) => (
                   <option key={o.value} value={o.value}>
@@ -484,11 +483,6 @@ export function SpeciesForm() {
               onChange={(e) => setForm((f) => ({ ...f, usesAsCombination: e.target.value }))}
             />
           </div>
-        </section>
-
-        {/* References */}
-        <section className="space-y-4">
-          <h2 className="text-lg font-medium border-b pb-2">References</h2>
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-2">
               <Label htmlFor="anupana">Anupana</Label>
@@ -496,24 +490,6 @@ export function SpeciesForm() {
                 id="anupana"
                 value={form.anupana ?? ""}
                 onChange={(e) => setForm((f) => ({ ...f, anupana: e.target.value }))}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="granthadikara">Granthadikara</Label>
-              <Input
-                id="granthadikara"
-                value={form.granthadikara ?? ""}
-                onChange={(e) => setForm((f) => ({ ...f, granthadikara: e.target.value }))}
-              />
-            </div>
-          </div>
-          <div className="grid gap-4 sm:grid-cols-2">
-            <div className="space-y-2">
-              <Label htmlFor="rogadhikara">Rogadhikara</Label>
-              <Input
-                id="rogadhikara"
-                value={form.rogadhikara ?? ""}
-                onChange={(e) => setForm((f) => ({ ...f, rogadhikara: e.target.value }))}
               />
             </div>
             <div className="space-y-2">
@@ -527,6 +503,29 @@ export function SpeciesForm() {
           </div>
         </section>
 
+        {/* References */}
+        <section className="space-y-4">
+          <h2 className="text-lg font-medium border-b pb-2">References</h2>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="space-y-2">
+              <Label htmlFor="granthadikara">Granthadikara</Label>
+              <Input
+                id="granthadikara"
+                value={form.granthadikara ?? ""}
+                onChange={(e) => setForm((f) => ({ ...f, granthadikara: e.target.value }))}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="rogadhikara">Rogadhikara</Label>
+              <Input
+                id="rogadhikara"
+                value={form.rogadhikara ?? ""}
+                onChange={(e) => setForm((f) => ({ ...f, rogadhikara: e.target.value }))}
+              />
+            </div>
+          </div>
+        </section>
+
         {/* Publish */}
         <section className="flex items-center space-x-2">
           <Switch
@@ -535,6 +534,20 @@ export function SpeciesForm() {
             onCheckedChange={(v) => setForm((f) => ({ ...f, published: v }))}
           />
           <Label htmlFor="published">Published</Label>
+        </section>
+
+        {/* Remarks */}
+        <section className="space-y-4">
+          <h2 className="text-lg font-medium border-b pb-2">Remarks</h2>
+          <div className="space-y-2">
+            <Label htmlFor="remarks">Remarks</Label>
+            <textarea
+              id="remarks"
+              className={`${inputClass} min-h-[100px]`}
+              value={form.remarks ?? ""}
+              onChange={(e) => setForm((f) => ({ ...f, remarks: e.target.value }))}
+            />
+          </div>
         </section>
 
         <div className="flex gap-2">
