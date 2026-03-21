@@ -114,15 +114,24 @@ function buildWhereFromFilters(filters: FilterEntry[]): Prisma.FloraSpeciesWhere
   return { AND: andClauses };
 }
 
+function searchToBookNames(search: string): BookName[] {
+  const s = search.toLowerCase();
+  return Object.values(BookName).filter((b) =>
+    b.replace(/_/g, " ").toLowerCase().includes(s)
+  );
+}
+
 export async function list(query: ListSpeciesQuery) {
   const { page, limit, search, filters: filtersJson } = query;
   const skip = (page - 1) * limit;
+  const matchedBooks = search ? searchToBookNames(search) : [];
   const searchWhere: Prisma.FloraSpeciesWhereInput = search
     ? {
         OR: [
           { drugName: { contains: search, mode: "insensitive" } },
           { sanskritName: { contains: search, mode: "insensitive" } },
           { latinName: { contains: search, mode: "insensitive" } },
+          ...(matchedBooks.length > 0 ? [{ bookName: { in: matchedBooks } }] : []),
         ],
       }
     : {};
