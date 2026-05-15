@@ -1,4 +1,5 @@
 import { apiUrl } from "@/lib/utils";
+import { getStoredToken } from "@/store/auth";
 
 type RequestOptions = RequestInit & { params?: Record<string, string | number | undefined> };
 
@@ -10,11 +11,13 @@ async function request<T>(path: string, options: RequestOptions = {}): Promise<T
       if (v !== undefined && v !== "") url.searchParams.set(k, String(v));
     });
   }
+  const token = getStoredToken();
   const res = await fetch(url.toString(), {
     ...init,
     credentials: "include",
     headers: {
       "Content-Type": "application/json",
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
       ...init.headers,
     },
   });

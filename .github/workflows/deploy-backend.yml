@@ -29,15 +29,16 @@ jobs:
 
             cd backend
             pnpm install --frozen-lockfile
+            pnpm exec prisma generate
 
-            # Write .env
+            # Write .env (no leading spaces so values are clean)
             cat > .env << 'ENVEOF'
-            DATABASE_URL=${{ secrets.DATABASE_URL }}
-            JWT_SECRET=${{ secrets.JWT_SECRET }}
-            PORT=4000
-            CORS_ORIGIN=${{ secrets.CORS_ORIGIN }}
-            NODE_ENV=production
-            ENVEOF
+DATABASE_URL=${{ secrets.DATABASE_URL }}
+JWT_SECRET=${{ secrets.JWT_SECRET }}
+PORT=4000
+CORS_ORIGIN=${{ secrets.CORS_ORIGIN }}
+NODE_ENV=development
+ENVEOF
 
             # Run migrations (safe to run every deploy)
             pnpm exec prisma migrate deploy
@@ -45,6 +46,8 @@ jobs:
             # Build TypeScript
             pnpm build
 
-            # Restart or start with PM2
-            pm2 restart flora-backend 2>/dev/null || pm2 start dist/server.js --name flora-backend
+            # Load env vars into shell so PM2 inherits them, then restart
+            set -a && source .env && set +a
+            pm2 delete flora-backend 2>/dev/null || true
+            pm2 start dist/server.js --name flora-backend
             pm2 save

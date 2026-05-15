@@ -18,11 +18,13 @@ export function Register() {
   const [confirmPassword, setConfirmPassword] = useState("");
   const navigate = useNavigate();
   const setUser = useAuthStore((s) => s.setUser);
+  const setToken = useAuthStore((s) => s.setToken);
 
   const registerMutation = useMutation({
     mutationFn: () =>
       authApi.register({ email, password, firstName, lastName }),
     onSuccess: (data) => {
+      if (data.token) setToken(data.token);
       setUser(data.user);
       navigate("/", { replace: true });
     },
