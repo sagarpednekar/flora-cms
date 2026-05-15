@@ -1,0 +1,50 @@
+name: Deploy Backend to EC2
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'backend/**'
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Deploy to EC2
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            # Clone repo if first time, otherwise pull
+            if [ ! -d "/home/ubuntu/flora-cms" ]; then
+              git clone https://github.com/${{ github.repository }}.git /home/ubuntu/flora-cms
+            fi
+
+            cd /home/ubuntu/flora-cms
+            git pull origin main
+
+            cd backend
+            pnpm install --frozen-lockfile
+
+            # Write .env
+            cat > .env << 'ENVEOF'
+            DATABASE_URL=${{ secrets.DATABASE_URL }}
+            JWT_SECRET=${{ secrets.JWT_SECRET }}
+            PORT=4000
+            CORS_ORIGIN=${{ secrets.CORS_ORIGIN }}
+            NODE_ENV=production
+            ENVEOF
+
+            # Run migrations (safe to run every deploy)
+            pnpm exec prisma migrate deploy
+
+            # Build TypeScript
+            pnpm build
+
+            # Restart or start with PM2
+            pm2 restart flora-backend 2>/dev/null || pm2 start dist/server.js --name flora-backend
+            pm2 save
