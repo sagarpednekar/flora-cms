@@ -12,14 +12,14 @@ import { LogOut, User } from "lucide-react";
 
 export function Header() {
   const user = useAuthStore((s) => s.user);
-  const setUser = useAuthStore((s) => s.setUser);
+  const logout = useAuthStore((s) => s.logout);
   const navigate = useNavigate();
 
   const handleLogout = async () => {
     try {
       await authApi.logout();
     } finally {
-      setUser(null);
+      logout();
       navigate("/login");
     }
   };

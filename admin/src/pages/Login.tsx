@@ -14,11 +14,13 @@ export function Login() {
   const navigate = useNavigate();
   const location = useLocation();
   const setUser = useAuthStore((s) => s.setUser);
+  const setToken = useAuthStore((s) => s.setToken);
   const from = (location.state as { from?: { pathname: string } })?.from?.pathname || "/";
 
   const loginMutation = useMutation({
     mutationFn: () => authApi.login(email, password),
     onSuccess: (data) => {
+      if (data.token) setToken(data.token);
       setUser(data.user);
       navigate(from, { replace: true });
     },
