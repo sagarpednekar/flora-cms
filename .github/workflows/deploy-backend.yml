@@ -31,14 +31,12 @@ jobs:
             pnpm install --frozen-lockfile
             pnpm exec prisma generate
 
-            # Write .env (no leading spaces so values are clean)
-            cat > .env << 'ENVEOF'
-DATABASE_URL=${{ secrets.DATABASE_URL }}
-JWT_SECRET=${{ secrets.JWT_SECRET }}
-PORT=4000
-CORS_ORIGIN=${{ secrets.CORS_ORIGIN }}
-NODE_ENV=development
-ENVEOF
+            # Write .env
+            echo "DATABASE_URL=${{ secrets.DATABASE_URL }}" > .env
+            echo "JWT_SECRET=${{ secrets.JWT_SECRET }}" >> .env
+            echo "PORT=4000" >> .env
+            echo "CORS_ORIGIN=${{ secrets.CORS_ORIGIN }}" >> .env
+            echo "NODE_ENV=development" >> .env
 
             # Run migrations (safe to run every deploy)
             pnpm exec prisma migrate deploy
