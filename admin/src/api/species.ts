@@ -1,5 +1,6 @@
 import { api } from "./client";
 import { apiUrl } from "@/lib/utils";
+import { getStoredToken } from "@/store/auth";
 
 export type ImportResult = {
   imported: number;
@@ -228,9 +229,13 @@ export const speciesApi = {
   importSpecies: async (file: File): Promise<ImportResult> => {
     const formData = new FormData();
     formData.append("file", file);
+    const token = getStoredToken();
     const res = await fetch(`${apiUrl}/species/import`, {
       method: "POST",
       credentials: "include",
+      headers: {
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
       body: formData,
     });
     if (!res.ok) {
