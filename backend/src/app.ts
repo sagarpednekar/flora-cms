@@ -30,7 +30,7 @@ app.get("/health", (_req, res) => res.json({ ok: true }));
 app.use((_req, res) => res.status(404).json({ error: "Not found" }));
 
 app.use((err: Error, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
-  console.error(err);
+  console.error("Server Error:", err);
   res.status(500).json({ error: "Internal server error" });
 });
 
