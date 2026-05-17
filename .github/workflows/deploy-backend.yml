@@ -35,14 +35,17 @@ jobs:
             pnpm install --frozen-lockfile
             pnpm exec prisma generate
 
+            # Create .env BEFORE building if environment variables are needed
             echo "DATABASE_URL=$DB_URL" > .env
             echo "JWT_SECRET=$JWT_SEC" >> .env
             echo "PORT=4000" >> .env
             echo "CORS_ORIGIN=$CORS" >> .env
             echo "NODE_ENV=development" >> .env
 
-            pnpm exec prisma migrate deploy
+            # Verify build succeeds
             pnpm build
+
+            pnpm exec prisma migrate deploy
 
             set -a && source .env && set +a
             pm2 delete flora-backend 2>/dev/null || true
