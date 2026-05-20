@@ -17,26 +17,17 @@ import {
 } from "@/api/species";
 import { useToast } from "@/components/ui/use-toast";
 import { ArrowLeft, Trash2 } from "lucide-react";
+import {
+  getSthanaOptionsForBook,
+  isSthanaValidForBook,
+  formatSthanaLabel,
+} from "@/constants/bookSthana";
 
 const BOOK_NAMES: { value: BookName; label: string }[] = [
   { value: "Charaka_Samhita", label: "Charaka Samhita" },
   { value: "Sushruta_Samhita", label: "Sushruta Samhita" },
   { value: "Ashtang_Hridaya", label: "Ashtang Hridaya" },
   { value: "Ashtang_Samgraha", label: "Ashtang Samgraha" },
-];
-
-const STHANA_OPTIONS: { value: Sthana; label: string }[] = [
-  { value: "Chikitsa_Sthana", label: "Chikitsa Sthana" },
-  { value: "Indriya_Sthana", label: "Indriya Sthana" },
-  { value: "Kalpa_Sthana", label: "Kalpa Sthana" },
-  { value: "Kalpa_siddhi_Sthana", label: "Kalpa siddhi Sthana" },
-  { value: "Kalpana_Sthana", label: "Kalpana Sthana" },
-  { value: "Nidana_Sthana", label: "Nidana Sthana" },
-  { value: "Sharir_Sthana", label: "Sharir Sthana" },
-  { value: "Sidhi_Sthana", label: "Sidhi Sthana" },
-  { value: "Sutra_Sthana", label: "Sutra Sthana" },
-  { value: "Uttar_Tantra", label: "Uttar Tantra" },
-  { value: "Vimana_Sthana", label: "Vimana Sthana" },
 ];
 
 const CHAPTER_OPTIONS: { value: ChapterNumber; label: string }[] = Array.from(
@@ -71,7 +62,7 @@ const defaultForm: FormState = {
   remarks: "",
   partOfPlantUsed: "",
   bookName: "Charaka_Samhita",
-  sthana: "Chikitsa_Sthana",
+  sthana: "Sutra_Sthana",
   chapterNumber: "Chapter_1",
   verseNumber: undefined,
   singleOrCombinationDrug: "Single",
@@ -203,6 +194,22 @@ export function SpeciesForm() {
   const saving = createMutation.isPending || updateMutation.isPending;
   const error = createMutation.error || updateMutation.error;
 
+  const bookName = form.bookName ?? "Charaka_Samhita";
+  const sthanaOptions = getSthanaOptionsForBook(bookName);
+  const showOrphanSthana =
+    !!form.sthana && !isSthanaValidForBook(bookName, form.sthana);
+
+  const handleBookChange = (bookName: BookName) => {
+    setForm((f) => {
+      const next = { ...f, bookName };
+      if (!isSthanaValidForBook(bookName, f.sthana)) {
+        const first = getSthanaOptionsForBook(bookName)[0];
+        next.sthana = first?.value;
+      }
+      return next;
+    });
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -289,7 +296,7 @@ export function SpeciesForm() {
                 id="bookName"
                 className={inputClass}
                 value={form.bookName}
-                onChange={(e) => setForm((f) => ({ ...f, bookName: e.target.value as BookName }))}
+                onChange={(e) => handleBookChange(e.target.value as BookName)}
                 required
               >
                 {BOOK_NAMES.map((o) => (
@@ -309,7 +316,12 @@ export function SpeciesForm() {
                   setForm((f) => ({ ...f, sthana: (e.target.value as Sthana) || undefined }))
                 }
               >
-                {STHANA_OPTIONS.map((o) => (
+                {showOrphanSthana && form.sthana && (
+                  <option key={form.sthana} value={form.sthana}>
+                    {formatSthanaLabel(form.sthana)}
+                  </option>
+                )}
+                {sthanaOptions.map((o) => (
                   <option key={o.value} value={o.value}>
                     {o.label}
                   </option>
