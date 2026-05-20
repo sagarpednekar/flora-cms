@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useMemo } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
@@ -23,8 +23,9 @@ import {
 } from "@/api/species";
 import { Pagination } from "@/components/Pagination";
 import { useToast } from "@/components/ui/use-toast";
-import { Plus, Pencil, Trash2, Upload, Filter, X } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { Plus, Pencil, Trash2, Upload, Filter } from "lucide-react";
+import { cn, titleCaseLabel } from "@/lib/utils";
+import { settingsApi } from "@/api/settings";
 
 const OPERATORS_STRING = [
   { value: "contains", label: "Contains" },
@@ -150,12 +151,42 @@ function renderCell(colId: string, s: FloraSpecies) {
 
 export function SpeciesList() {
   const [page, setPage] = useState(1);
-  const [search, setSearch] = useState("");
-  const [searchDebounced, setSearchDebounced] = useState("");
   const [importResult, setImportResult] = useState<ImportResult | null>(null);
+
+  const { data: settings } = useQuery({
+    queryKey: ["settings"],
+    queryFn: () => settingsApi.get(),
+  });
+
+  const enablePublishDraft = settings?.enablePublishDraft ?? false;
+
+  const tableColumns = useMemo(
+    () =>
+      enablePublishDraft
+        ? SPECIES_TABLE_COLUMNS
+        : SPECIES_TABLE_COLUMNS.filter((c) => c.id !== "state"),
+    [enablePublishDraft]
+  );
+
+  const defaultVisibleColumnIds = useMemo(
+    () =>
+      enablePublishDraft
+        ? ["drugName", "sanskritName", "latinName", "bookName", "state"]
+        : ["drugName", "sanskritName", "latinName", "bookName"],
+    [enablePublishDraft]
+  );
+
+  const filterFields = useMemo(
+    () =>
+      enablePublishDraft
+        ? SPECIES_FILTER_FIELDS
+        : SPECIES_FILTER_FIELDS.filter((f) => f.id !== "published"),
+    [enablePublishDraft]
+  );
+
   const { visibleColumnIds, visibleColumnsOrdered, toggleColumn } = useColumnVisibility(
-    SPECIES_TABLE_COLUMNS,
-    ["drugName", "sanskritName", "latinName", "bookName", "state"],
+    tableColumns,
+    defaultVisibleColumnIds,
     "species-column-visibility"
   );
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -181,8 +212,8 @@ export function SpeciesList() {
   const [appliedFilters, setAppliedFilters] = useState<SpeciesFilterEntry[]>([]);
 
   const addFilter = () => {
-    const firstId = SPECIES_FILTER_FIELDS[0]?.id ?? "drugName";
-    const firstType = SPECIES_FILTER_FIELDS[0]?.type ?? "string";
+    const firstId = filterFields[0]?.id ?? "drugName";
+    const firstType = filterFields[0]?.type ?? "string";
     setFilters([
       ...filters,
       {
@@ -216,12 +247,11 @@ export function SpeciesList() {
   });
 
   const { data, isLoading } = useQuery({
-    queryKey: ["species", page, limit, searchDebounced, appliedFilters],
+    queryKey: ["species", page, limit, appliedFilters],
     queryFn: () =>
       speciesApi.list({
         page,
         limit,
-        search: searchDebounced || undefined,
         filters: normalizedAppliedFilters.length > 0 ? normalizedAppliedFilters : undefined,
       }),
   });
@@ -264,54 +294,15 @@ export function SpeciesList() {
     e.target.value = "";
   };
 
-  const handleSearchSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    setSearchDebounced(search);
-    setPage(1);
-  };
-
   const totalPages = data ? Math.ceil(data.total / data.limit) : 0;
 
   return (
     <div className="space-y-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <h1 className="text-2xl font-semibold">Flora Species</h1>
+        <h1 className="text-2xl font-semibold">Dashboard</h1>
         <div className="flex gap-2">
-          <form onSubmit={handleSearchSubmit} className="flex gap-2">
-            <div className="relative">
-              <Input
-                placeholder="Search by drug name, Sanskrit, Latin name or book…"
-                value={search}
-                onChange={(e) => {
-                  setSearch(e.target.value);
-                  if (e.target.value === "") {
-                    setSearchDebounced("");
-                    setPage(1);
-                  }
-                }}
-                className="w-64 pr-8"
-              />
-              {search && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    setSearch("");
-                    setSearchDebounced("");
-                    setPage(1);
-                  }}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                  aria-label="Clear search"
-                >
-                  <X className="h-4 w-4" />
-                </button>
-              )}
-            </div>
-            <Button type="submit" variant="secondary">
-              Search
-            </Button>
-          </form>
           <ColumnVisibilityPopover
-            columns={SPECIES_TABLE_COLUMNS}
+            columns={tableColumns}
             visibleColumnIds={visibleColumnIds}
             onToggleColumn={toggleColumn}
           />
@@ -356,7 +347,7 @@ export function SpeciesList() {
         {filters.length > 0 && (
           <div className="space-y-2">
             {filters.map((filter, index) => {
-              const fieldConfig = SPECIES_FILTER_FIELDS.find((f) => f.id === filter.field);
+              const fieldConfig = filterFields.find((f) => f.id === filter.field);
               const fieldType = fieldConfig?.type ?? "string";
               const operators = operatorsForType(fieldType);
               const showValue = filter.operator !== "empty";
@@ -366,7 +357,7 @@ export function SpeciesList() {
                     value={filter.field}
                     onChange={(e) => {
                       const nextId = e.target.value;
-                      const nextConfig = SPECIES_FILTER_FIELDS.find((f) => f.id === nextId);
+                      const nextConfig = filterFields.find((f) => f.id === nextId);
                       const nextType = nextConfig?.type ?? "string";
                       updateFilter(index, {
                         field: nextId,
@@ -379,7 +370,7 @@ export function SpeciesList() {
                       "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
                     )}
                   >
-                    {SPECIES_FILTER_FIELDS.map((f) => (
+                    {filterFields.map((f) => (
                       <option key={f.id} value={f.id}>
                         {f.label}
                       </option>
@@ -526,11 +517,18 @@ export function SpeciesList() {
           <div className="overflow-x-auto scroll-smooth">
             <Table className="min-w-max">
             <TableHeader>
-              <TableRow>
+              <TableRow className="bg-gray-50 hover:bg-gray-50">
                 {visibleColumnsOrdered.map((col) => (
-                  <TableHead key={col.id}>{col.label}</TableHead>
+                  <TableHead
+                    key={col.id}
+                    className="bg-gray-50 text-gray-700 font-semibold"
+                  >
+                    {titleCaseLabel(col.label)}
+                  </TableHead>
                 ))}
-                <TableHead className="w-24">Actions</TableHead>
+                <TableHead className="w-24 bg-gray-50 text-gray-700 font-semibold">
+                  Actions
+                </TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>

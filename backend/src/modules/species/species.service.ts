@@ -24,6 +24,7 @@ import {
   FILTER_OPERATORS_BOOLEAN,
 } from "./species.schema.js";
 import type { Prisma } from "@prisma/client";
+import { getSettings } from "../settings/settings.service.js";
 
 const prisma = new PrismaClient();
 
@@ -157,6 +158,9 @@ export async function getById(id: string) {
 }
 
 export async function create(data: CreateSpeciesInput) {
+  const settings = await getSettings();
+  const published = settings.enablePublishDraft ? (data.published ?? false) : false;
+
   return prisma.floraSpecies.create({
     data: {
       drugName: data.drugName,
@@ -182,12 +186,20 @@ export async function create(data: CreateSpeciesInput) {
       granthadikara: data.granthadikara,
       rogadhikara: data.rogadhikara,
       sahapana: data.sahapana,
-      published: data.published ?? false,
+      published,
     },
   });
 }
 
 export async function update(id: string, data: UpdateSpeciesInput) {
+  const settings = await getSettings();
+  const publishedUpdate =
+    settings.enablePublishDraft && data.published !== undefined
+      ? { published: data.published }
+      : !settings.enablePublishDraft
+        ? { published: false }
+        : {};
+
   return prisma.floraSpecies.update({
     where: { id },
     data: {
@@ -220,7 +232,7 @@ export async function update(id: string, data: UpdateSpeciesInput) {
       ...(data.granthadikara !== undefined && { granthadikara: data.granthadikara }),
       ...(data.rogadhikara !== undefined && { rogadhikara: data.rogadhikara }),
       ...(data.sahapana !== undefined && { sahapana: data.sahapana }),
-      ...(data.published !== undefined && { published: data.published }),
+      ...publishedUpdate,
     },
   });
 }

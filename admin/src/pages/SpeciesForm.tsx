@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
@@ -22,6 +22,10 @@ import {
   isSthanaValidForBook,
   formatSthanaLabel,
 } from "@/constants/bookSthana";
+import { settingsApi } from "@/api/settings";
+import { FormSection } from "@/components/FormSection";
+import { ScrollToBottomButton } from "@/components/ScrollToBottomButton";
+import { scrollToFormSection } from "@/lib/utils";
 
 const BOOK_NAMES: { value: BookName; label: string }[] = [
   { value: "Charaka_Samhita", label: "Charaka Samhita" },
@@ -123,6 +127,41 @@ export function SpeciesForm() {
   const { toast } = useToast();
   const [form, setForm] = useState<FormState>(defaultForm);
 
+  const { data: settings } = useQuery({
+    queryKey: ["settings"],
+    queryFn: () => settingsApi.get(),
+  });
+
+  const enablePublishDraft = settings?.enablePublishDraft ?? false;
+
+  const formSections = useMemo(() => {
+    const sections = [
+      { id: "section-basic", title: "Basic" },
+      { id: "section-source", title: "Source" },
+      { id: "section-formulation", title: "Drug type and formulation" },
+      { id: "section-use-route", title: "Use and route" },
+      { id: "section-references", title: "References" },
+    ];
+    if (enablePublishDraft) {
+      sections.push({ id: "section-published", title: "Published" });
+    }
+    sections.push({ id: "section-remarks", title: "Remarks" });
+    return sections;
+  }, [enablePublishDraft]);
+
+  const sectionNav = (sectionId: string) => {
+    const index = formSections.findIndex((s) => s.id === sectionId);
+    if (index < 0 || index >= formSections.length - 1) {
+      return { showNext: false as const };
+    }
+    const next = formSections[index + 1];
+    return {
+      showNext: true as const,
+      nextTitle: next.title,
+      onNext: () => scrollToFormSection(next.id),
+    };
+  };
+
   const { data: existing } = useQuery({
     queryKey: ["species", id],
     queryFn: () => speciesApi.get(id!),
@@ -138,7 +177,7 @@ export function SpeciesForm() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["species"] });
       toast.success("Species added");
-      navigate("/species");
+      navigate("/");
     },
     onError: (err) => toast.error(getErrorMessage(err)),
   });
@@ -158,15 +197,16 @@ export function SpeciesForm() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["species"] });
       toast.success("Species deleted");
-      navigate("/species");
+      navigate("/");
     },
     onError: (err) => toast.error(getErrorMessage(err)),
   });
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    const { published: _published, ...formWithoutPublished } = form;
     const payload: SpeciesCreateInput = {
-      ...form,
+      ...formWithoutPublished,
       sanskritName: form.sanskritName || undefined,
       latinName: form.latinName || undefined,
       remarks: form.remarks || undefined,
@@ -179,6 +219,7 @@ export function SpeciesForm() {
       granthadikara: form.granthadikara || undefined,
       rogadhikara: form.rogadhikara || undefined,
       sahapana: form.sahapana || undefined,
+      ...(enablePublishDraft ? { published: form.published } : {}),
     };
     if (isNew) {
       createMutation.mutate(payload);
@@ -213,11 +254,11 @@ export function SpeciesForm() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <Button variant="ghost" onClick={() => navigate("/species")}>
+        <Button variant="ghost" onClick={() => navigate("/")}>
           <ArrowLeft className="mr-2 h-4 w-4" />
           Back
         </Button>
-        {!isNew && (
+        {!isNew && enablePublishDraft && (
           <Button
             variant="outline"
             onClick={() => updateMutation.mutate({ ...form, published: !form.published })}
@@ -231,7 +272,7 @@ export function SpeciesForm() {
         <div className="rounded-md border border-gray-200 bg-gray-50 p-4 text-sm text-gray-600">
           <span className="font-medium">Last updated:</span>{" "}
           {new Date(existing.updatedAt).toLocaleString()}
-          {!form.published && (
+          {enablePublishDraft && !form.published && (
             <span className="ml-2 inline-flex items-center rounded-full border border-gray-300 bg-gray-100 px-2.5 py-0.5 text-xs font-medium text-gray-700">
               Draft
             </span>
@@ -246,9 +287,7 @@ export function SpeciesForm() {
           </p>
         )}
 
-        {/* Basic */}
-        <section className="space-y-4">
-          <h2 className="text-lg font-medium border-b pb-2">Basic</h2>
+        <FormSection id="section-basic" title="Basic" {...sectionNav("section-basic")}>
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-2">
               <Label htmlFor="drugName">Drug name *</Label>
@@ -284,11 +323,9 @@ export function SpeciesForm() {
               onChange={(e) => setForm((f) => ({ ...f, partOfPlantUsed: e.target.value }))}
             />
           </div>
-        </section>
+        </FormSection>
 
-        {/* Source */}
-        <section className="space-y-4">
-          <h2 className="text-lg font-medium border-b pb-2">Source</h2>
+        <FormSection id="section-source" title="Source" {...sectionNav("section-source")}>
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-2">
               <Label htmlFor="bookName">Book name / Samhita name *</Label>
@@ -365,11 +402,13 @@ export function SpeciesForm() {
               />
             </div>
           </div>
-        </section>
+        </FormSection>
 
-        {/* Drug type and formulation */}
-        <section className="space-y-4">
-          <h2 className="text-lg font-medium border-b pb-2">Drug type and formulation</h2>
+        <FormSection
+          id="section-formulation"
+          title="Drug type and formulation"
+          {...sectionNav("section-formulation")}
+        >
           <div className="space-y-2">
             <Label htmlFor="singleOrCombinationDrug">Single or combination drug</Label>
             <select
@@ -418,11 +457,9 @@ export function SpeciesForm() {
               onChange={(e) => setForm((f) => ({ ...f, nameOfCombination: e.target.value }))}
             />
           </div>
-        </section>
+        </FormSection>
 
-        {/* Use and route */}
-        <section className="space-y-4">
-          <h2 className="text-lg font-medium border-b pb-2">Use and route</h2>
+        <FormSection id="section-use-route" title="Use and route" {...sectionNav("section-use-route")}>
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-2">
               <Label htmlFor="userExtOrInt">User INT/EXT</Label>
@@ -513,11 +550,9 @@ export function SpeciesForm() {
               />
             </div>
           </div>
-        </section>
+        </FormSection>
 
-        {/* References */}
-        <section className="space-y-4">
-          <h2 className="text-lg font-medium border-b pb-2">References</h2>
+        <FormSection id="section-references" title="References" {...sectionNav("section-references")}>
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-2">
               <Label htmlFor="granthadikara">Granthadikara</Label>
@@ -536,21 +571,22 @@ export function SpeciesForm() {
               />
             </div>
           </div>
-        </section>
+        </FormSection>
 
-        {/* Publish */}
-        <section className="flex items-center space-x-2">
-          <Switch
-            id="published"
-            checked={form.published}
-            onCheckedChange={(v) => setForm((f) => ({ ...f, published: v }))}
-          />
-          <Label htmlFor="published">Published</Label>
-        </section>
+        {enablePublishDraft && (
+          <FormSection id="section-published" title="Published" {...sectionNav("section-published")}>
+            <div className="flex items-center space-x-2">
+              <Switch
+                id="published"
+                checked={form.published}
+                onCheckedChange={(v) => setForm((f) => ({ ...f, published: v }))}
+              />
+              <Label htmlFor="published">Published</Label>
+            </div>
+          </FormSection>
+        )}
 
-        {/* Remarks */}
-        <section className="space-y-4">
-          <h2 className="text-lg font-medium border-b pb-2">Remarks</h2>
+        <FormSection id="section-remarks" title="Remarks">
           <div className="space-y-2">
             <Label htmlFor="remarks">Remarks</Label>
             <textarea
@@ -560,13 +596,13 @@ export function SpeciesForm() {
               onChange={(e) => setForm((f) => ({ ...f, remarks: e.target.value }))}
             />
           </div>
-        </section>
+        </FormSection>
 
-        <div className="flex gap-2">
+        <div id="form-actions" className="flex gap-2 scroll-mt-24">
           <Button type="submit" disabled={saving}>
             {saving ? "Saving…" : "Save"}
           </Button>
-          <Button type="button" variant="outline" onClick={() => navigate("/species")}>
+          <Button type="button" variant="outline" onClick={() => navigate("/")}>
             Cancel
           </Button>
           {!isNew && (
@@ -582,6 +618,8 @@ export function SpeciesForm() {
           )}
         </div>
       </form>
+
+      <ScrollToBottomButton />
     </div>
   );
 }

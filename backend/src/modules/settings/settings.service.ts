@@ -7,6 +7,7 @@ const SETTINGS_KEYS = [
   "defaultRoleForNewUsers",
   "allowSignUps",
   "oneAccountPerEmail",
+  "enablePublishDraft",
 ] as const;
 
 export async function getSettings() {
@@ -18,6 +19,7 @@ export async function getSettings() {
     defaultRoleForNewUsers: map.defaultRoleForNewUsers ?? null,
     allowSignUps: map.allowSignUps !== "false",
     oneAccountPerEmail: map.oneAccountPerEmail !== "false",
+    enablePublishDraft: map.enablePublishDraft === "true",
   };
 }
 

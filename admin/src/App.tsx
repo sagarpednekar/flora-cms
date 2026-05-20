@@ -7,7 +7,6 @@ import { authApi } from "@/api/auth";
 import { useAuthStore } from "@/store/auth";
 import { Login } from "@/pages/Login";
 import { Register } from "@/pages/Register";
-import { Dashboard } from "@/pages/Dashboard";
 import { SpeciesList } from "@/pages/SpeciesList";
 import { SpeciesForm } from "@/pages/SpeciesForm";
 import { UsersList } from "@/pages/UsersList";
@@ -52,8 +51,8 @@ function AuthLoader() {
           </ProtectedRoute>
         }
       >
-        <Route index element={<Dashboard />} />
-        <Route path="species" element={<SpeciesList />} />
+        <Route index element={<SpeciesList />} />
+        <Route path="species" element={<Navigate to="/" replace />} />
         <Route path="species/new" element={<SpeciesForm />} />
         <Route path="species/:id/edit" element={<SpeciesForm />} />
         <Route path="users" element={<UsersList />} />

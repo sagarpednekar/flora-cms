@@ -20,12 +20,14 @@ export function Settings() {
 
   const [allowSignUps, setAllowSignUps] = useState(true);
   const [oneAccountPerEmail, setOneAccountPerEmail] = useState(true);
+  const [enablePublishDraft, setEnablePublishDraft] = useState(false);
   const [defaultRoleId, setDefaultRoleId] = useState("");
 
   useEffect(() => {
     if (settings) {
       setAllowSignUps(settings.allowSignUps);
       setOneAccountPerEmail(settings.oneAccountPerEmail);
+      setEnablePublishDraft(settings.enablePublishDraft);
       setDefaultRoleId(settings.defaultRoleForNewUsers ?? "");
     }
   }, [settings]);
@@ -44,6 +46,7 @@ export function Settings() {
     patchMutation.mutate({
       allowSignUps,
       oneAccountPerEmail,
+      enablePublishDraft,
       defaultRoleForNewUsers: defaultRoleId || undefined,
     });
   };
@@ -63,6 +66,16 @@ export function Settings() {
             checked={allowSignUps}
             onCheckedChange={setAllowSignUps}
           />
+        </div>
+        <div className="flex items-center justify-between">
+          <div>
+            <Label className="text-base">Enable publish and draft</Label>
+            <p className="text-sm text-gray-500">
+              When enabled, species entries can be saved as draft or published. When disabled, all
+              entries are saved without publish controls.
+            </p>
+          </div>
+          <Switch checked={enablePublishDraft} onCheckedChange={setEnablePublishDraft} />
         </div>
         <div className="flex items-center justify-between">
           <div>

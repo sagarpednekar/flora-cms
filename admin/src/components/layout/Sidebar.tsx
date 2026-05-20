@@ -1,7 +1,6 @@
 import { Link, useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import {
-  Leaf,
   Users,
   Shield,
   Settings,
@@ -10,7 +9,6 @@ import {
 
 const nav = [
   { to: "/", label: "Dashboard", icon: LayoutDashboard },
-  { to: "/species", label: "Flora Species", icon: Leaf },
   { to: "/users", label: "Users", icon: Users },
   { to: "/roles", label: "Roles", icon: Shield },
   { to: "/settings", label: "Settings", icon: Settings },
